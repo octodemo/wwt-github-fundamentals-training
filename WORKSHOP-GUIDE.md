@@ -342,231 +342,262 @@ GitHub's secret scanning automatically detects 200+ credential patterns (AWS key
 
 ---
 
-## Track 3: Copilot Power User — Cloud Agent + CLI in 30 Minutes
+## Track 3: Copilot Power User — GitHub Copilot CLI in 30 Minutes
 
-**Who it's for:** Participants already comfortable with Copilot Chat and basic GitHub. This track skips the basics and goes straight to workflows that make a senior dev's day meaningfully faster.
+**Who it's for:** Participants already comfortable with Copilot Chat and basic GitHub. This track introduces the **GitHub Copilot CLI** — a full agentic coding assistant that lives in your terminal, distinct from the browser-based Copilot Chat experience.
 
-**Does not require Track 1.** You can use any repo you have write access to. If you don't have one handy, fork a public repo or use one from a previous session.
+> **Important distinction:** This is *not* `gh copilot suggest` (a lightweight `gh` extension). The **GitHub Copilot CLI** (`copilot`) is a standalone product — the same agentic engine that powers the cloud agent, running locally and synchronously in your terminal. You talk to it in natural language, it reads your code, runs commands, and can hand work off to the cloud agent via `/delegate`.
 
-**The structure is intentional:** You'll kick off a cloud agent task *first* — then use the CLI while it runs in the background — then come back to review the PR like a senior engineer. This mirrors how the async agent workflow actually fits into a real workday.
+**Does not require Track 1.** Navigate to any repo you have write access to before starting.
+
+**The structure is intentional:** You'll plan and kick off a task with the CLI first — hand it off to the cloud agent with `/delegate` — then explore the CLI's most powerful commands while the agent works — then come back and review the PR without ever leaving your terminal.
 
 ### Learning Objectives
-- Delegate a non-trivial engineering task to the cloud agent with a precise prompt
-- Master the CLI commands that matter most day-to-day
-- Plan a feature and create issues from the terminal using `gh copilot suggest`
-- Kick off a new cloud agent session without ever leaving the terminal
-- Review an agent-generated PR using CLI tools and Copilot Chat together
+- Install and launch the GitHub Copilot CLI
+- Use natural language to explore, plan, and modify a codebase from the terminal
+- Use `/plan` to think through a feature before writing a line of code
+- Use `/delegate` to hand a session off to the cloud agent and create a PR
+- Use `/review`, `/diff`, and `/pr` to do a meaningful code review in the terminal
 
 ### Time Map
 
 | Block | Time | What you're doing |
 |-------|------|-------------------|
-| Module 3.1 | 0–5 min | Fire off a cloud agent task — then leave it running |
-| Module 3.2 | 5–20 min | CLI deep dive while the agent works |
-| Module 3.3 | 20–30 min | Come back — review and merge the PR like a senior dev |
+| Module 3.1 | 0–5 min | Install, launch, and `/delegate` a task to the cloud agent |
+| Module 3.2 | 5–20 min | Explore key CLI workflows while the agent runs |
+| Module 3.3 | 20–30 min | Come back — review and merge the PR without leaving the terminal |
 
 ---
 
-### Module 3.1 — Delegate Something Worth Delegating (Cloud Agent)
+### Module 3.1 — Install, Launch, and Delegate
 
-**Goal:** Give the cloud agent a task that would actually take you 30–60 minutes to do manually. Fire it off and walk away.
+**Goal:** Get the CLI running and immediately hand a non-trivial task to the cloud agent so it works while you explore.
 
-**Pick one of the following prompts** based on what repo you're working in. Assign it via the **Agents tab**, **GitHub Issues → assign to Copilot**, or — as you'll learn in Module 3.2 — straight from your terminal.
+#### Setup (~2 min)
 
-> 🟡 **Option A — Refactor (use with the calculator app or any small JS/TS project):**
-> *"Refactor the JavaScript into a proper ES module architecture. Extract all business logic into a class with clearly named methods. Each method must have JSDoc documentation including @param and @returns. Do not change any HTML structure or CSS. Add a `ARCHITECTURE.md` explaining the module design."*
+```bash
+# Install (macOS/Linux)
+brew install copilot-cli
+# or:
+curl -fsSL https://gh.io/copilot-install | bash
 
-> 🟡 **Option B — Add CI (use with any repo that doesn't have GitHub Actions yet):**
-> *"Create a GitHub Actions CI workflow that runs on every PR targeting main. It should: lint the code (pick an appropriate linter for the language), run any existing tests, and block the merge if either step fails. Add a status badge to the README pointing to this workflow."*
+# Windows
+winget install GitHub.Copilot
 
-> 🔴 **Option C — Triage bot (use with any repo, no existing code required):**
-> *"Create a GitHub Actions workflow that automatically triages new issues. When an issue is opened: scan the title and body for keywords, apply appropriate labels (bug, enhancement, documentation, question, help wanted), and post a comment acknowledging the issue and asking for any missing reproduction steps if it looks like a bug. Use only the GitHub Actions built-in token — no external API keys."*
+# Launch in your repo directory
+cd your-repo
+copilot
+```
 
-**Steps:**
-1. Pick your option, copy the prompt
-2. Navigate to **Issues → New Issue**, write a descriptive title, paste the prompt as the body
-3. In the Assignees field, select **Copilot**
-4. Add any optional context in the prompt field (e.g., "This is a vanilla JS project, no frameworks")
-5. Click **Submit** — the agent starts running in the background
+On first launch you'll be prompted to `/login` — follow the on-screen auth flow. Then you're in.
 
-> 📸 **Screenshot cue:** Capture the Issue with Copilot assigned and the agent session status starting.
-
-6. **Don't wait** — move immediately to Module 3.2 while the agent works
+> 📸 **Screenshot cue:** Capture the Copilot CLI splash screen on first launch.
 
 ---
 
-### Module 3.2 — CLI Power Moves
+#### Fire off a task and `/delegate` it (~3 min)
 
-**Goal:** Learn the CLI commands that senior devs actually use daily. No toy examples.
+Once you're in the CLI, describe a real task — something that would take you 30–60 min manually. Pick one:
 
-#### Setup (first time only, ~2 min)
+> 🟡 **Option A — Refactor (any small JS/TS project):**
+> *"Refactor the JavaScript into a proper ES module architecture. Extract all business logic into a Calculator class with clearly named methods. Each method needs JSDoc with @param and @returns. Do not touch the HTML or CSS. Add an ARCHITECTURE.md summarizing the module design."*
 
-```bash
-# Install GitHub CLI if needed
-brew install gh          # macOS
-# winget install GitHub.cli  # Windows
+> 🟡 **Option B — Add CI (any repo without GitHub Actions):**
+> *"Create a GitHub Actions CI workflow that runs on every PR to main. Lint the code with an appropriate linter, run any existing tests, and block merge if either fails. Add a passing/failing status badge to the README."*
 
-# Authenticate
-gh auth login
+> 🔴 **Option C — Issue triage bot (any repo):**
+> *"Create a GitHub Actions workflow that triages new issues automatically. When an issue opens: scan the title and body for keywords, apply appropriate labels (bug, enhancement, documentation, question, help wanted), and post a comment asking for reproduction steps if it looks like a bug. Use only the built-in GITHUB_TOKEN."*
 
-# Install Copilot extension
-gh extension install github/gh-copilot
+Type your chosen prompt into the CLI. Let it respond with a plan, then run:
 
-# Confirm
-gh copilot --help
 ```
+/delegate
+```
+
+This hands the current session to the **cloud agent on GitHub**, which will implement the plan and open a PR for your review. The CLI confirms with a link to the session.
+
+> 📸 **Screenshot cue:** Capture the CLI after `/delegate` — showing the confirmation message and the link to the cloud agent session on GitHub.
+
+**Don't wait for it.** Move to Module 3.2 immediately.
 
 ---
 
-#### Block 1: Understand Anything with `gh copilot explain`
+### Module 3.2 — Key CLI Workflows
 
-Use this whenever you encounter a command you don't fully trust or understand. It explains shell, git, and `gh` commands — including flags and side effects.
-
-```bash
-# What does this actually do? (dangerous if misunderstood)
-gh copilot explain "git reflog expire --expire=now --all && git gc --prune=now --aggressive"
-
-# Understand a rebase workflow
-gh copilot explain "git rebase -i HEAD~4"
-
-# Demystify a gh command you've seen in a workflow
-gh copilot explain "gh pr merge --auto --squash --delete-branch"
-
-# What are the risks here?
-gh copilot explain "git push origin --force-with-lease"
-```
-
-> 💡 **Use this in code review too** — paste any unfamiliar shell command from a workflow file and ask Copilot to explain it before approving.
-
-> 📸 **Screenshot cue:** Capture `gh copilot explain` output for one of the above — ideally the `reflog` or `force-with-lease` one where the explanation is genuinely useful.
+**Goal:** While the cloud agent works, learn the CLI patterns that change how you interact with code every day.
 
 ---
 
-#### Block 2: Feature Planning with `gh copilot suggest`
+#### Block 1: Plan Before You Code with `/plan`
 
-`gh copilot suggest` isn't just for one-liners — use it to plan and scaffold your GitHub workflow from the terminal.
+`/plan` tells the CLI to think through a feature and produce a structured implementation plan *before* touching any files. Use it on your own ideas, or on code you've just inherited.
 
-```bash
-# Find the right git command when you can't remember it
-gh copilot suggest --target git "squash my last 3 commits into one with a new message before I push"
+In the CLI (still in your repo), try:
 
-# Generate a well-formed commit message
-gh copilot suggest --target shell "write a conventional commit message for changes that add a dark mode toggle using CSS custom properties and localStorage"
-
-# Recover from a mistake
-gh copilot suggest --target git "I accidentally committed directly to main — undo the last commit but keep my changes staged"
-
-# Build a complex find command
-gh copilot suggest --target shell "find all JavaScript files modified in the last 3 days that contain the word 'TODO', print the filename and line number"
+```
+/plan add comprehensive keyboard navigation support to this app
 ```
 
-> 📸 **Screenshot cue:** Capture a `gh copilot suggest` response where you actually ran the suggested command — show both the suggestion and the output.
+Or on an unfamiliar codebase:
+
+```
+/plan refactor the validation logic to remove duplication across these three files
+```
+
+The CLI will:
+- Read the relevant files
+- Identify risks and dependencies
+- Produce a step-by-step implementation plan
+- Ask if you want to proceed or adjust
+
+> 💡 This is the move senior devs make that junior devs skip — planning surfaces the hard parts before they bite you mid-implementation.
+
+> 📸 **Screenshot cue:** Capture the `/plan` output showing the CLI's proposed implementation steps for your request.
 
 ---
 
-#### Block 3: `gh` CLI for Your Daily GitHub Workflow
+#### Block 2: Ask Questions About Your Codebase
 
-These aren't Copilot-specific — they're the `gh` commands that replace context-switching to the browser.
+The CLI has full context of your repo. Ask it things you'd normally spend 20 minutes grepping for:
 
-```bash
-# See what's on your plate
-gh issue list --assignee @me --state open
-gh pr list --author @me --state open
-
-# Check recent Actions runs without opening the browser
-gh run list --limit 5
-gh run watch   # live-tail the most recent run
-
-# View a PR in your terminal (great in code review)
-gh pr list
-gh pr view <number>
-gh pr diff <number>
-
-# Check out a PR branch locally to test it
-gh pr checkout <number>
-
-# Close the loop: merge from terminal when you're done reviewing
-gh pr merge <number> --squash --delete-branch
+```
+What does the calculate() function actually do, and what are its edge cases?
 ```
 
-> 📸 **Screenshot cue:** Capture `gh pr list` or `gh run list` showing real output from your repo.
+```
+Where is localStorage being used in this project and is it consistent?
+```
+
+```
+Are there any security issues in this codebase I should know about before shipping?
+```
+
+```
+Explain the data flow from when a user clicks a button to when the result is displayed.
+```
+
+Use `@` to reference specific files for focused questions:
+
+```
+@src/calculator.js what would break if I changed the return type of evaluate() from string to number?
+```
+
+Use `#` to pull in GitHub context:
+
+```
+#42 what's the current status of this issue and is there anything blocking it?
+```
+
+> 📸 **Screenshot cue:** Capture the CLI answering one of the codebase questions above — ideally one where it surfaces something non-obvious.
 
 ---
 
-#### Block 4: The Power Combo — Create an Issue and Assign to Copilot Without Leaving the Terminal
+#### Block 3: Make Changes and `/diff` Before You Commit
 
-This is the workflow that makes the async agent model click. You never open a browser.
+Ask the CLI to make a targeted change directly:
 
-```bash
-gh issue create \
-  --title "Add keyboard navigation to calculator" \
-  --body "Users should be able to operate the calculator entirely with the keyboard. Map number keys (0–9), operators (+, -, *, /), Enter for equals, Escape to clear, Backspace to delete last digit. Highlight the active button on keypress. Do not modify the existing click handlers." \
-  --label "enhancement" \
-  --assignee @copilot
+```
+Add input validation to the calculator — if the user types a non-numeric character, show a red border and an inline error message. Do not modify any other behavior.
 ```
 
-> 📸 **Screenshot cue:** Capture the terminal output after running this command, showing the new issue URL — then open it in the browser and capture Copilot already assigned and the session starting.
+The CLI will propose changes, show you what it wants to do, and ask for confirmation before writing anything.
 
-> 💡 **Instructor talking point:** This is the full loop — plan it in your head, write it at the terminal, Copilot starts working. You can queue up 3 agent tasks before your morning standup and have PRs waiting for you when it's done.
+After changes are made, review them:
+
+```
+/diff
+```
+
+This shows a clean summary of everything changed in the current directory — great before committing or opening a PR.
+
+> 📸 **Screenshot cue:** Capture `/diff` output showing the CLI's changes in a readable format.
 
 ---
 
-### Module 3.3 — Review the Agent PR Like a Senior Dev
+#### Block 4: Run Shell Commands Without Leaving Context
 
-**Goal:** Come back to the PR from Module 3.1. Don't just skim and approve — do a real review using CLI tools and Copilot Chat together.
+Use `!` to run shell commands inline without exiting the conversation:
 
-**By now the agent should have a PR open.** Check:
-
-```bash
-gh pr list --state open
+```
+! git log --oneline -10
+! git status
+! npm test
 ```
 
-**Step 1 — Read it in the terminal first**
+The CLI sees the output and can act on it. For example:
 
-```bash
-gh pr view <number>        # summary, description, checks status
-gh pr diff <number>        # full diff in terminal
+```
+! npm test
+```
+...then immediately ask:
+```
+Two tests are failing — what's causing it and fix it.
 ```
 
-**Step 2 — Check out the branch and poke around**
+The CLI will read the test output and patch the code in one step.
 
-```bash
-gh pr checkout <number>
-# Now you're on the agent's branch — explore, run it, test it
+> 💡 This is the loop that makes the CLI feel like a pair programmer rather than a chatbot — you run, it sees, it fixes.
+
+> 📸 **Screenshot cue:** Capture a sequence of `! npm test` followed by the CLI diagnosing and fixing the failure.
+
+---
+
+### Module 3.3 — Review the Cloud Agent PR in the Terminal
+
+**Goal:** The cloud agent should have a PR open by now. Review it without switching to a browser.
+
+#### Check in on the agent
+
+```
+/pr
 ```
 
-> 📸 **Screenshot cue:** Capture `gh pr diff` output in the terminal showing a meaningful chunk of the agent's changes.
+This shows the PR status for the current branch — or lists recent PRs. Navigate to the agent's PR.
 
-**Step 3 — Ask Copilot to review it too**
+> 📸 **Screenshot cue:** Capture `/pr` output showing the cloud agent's open PR with its title and status checks.
 
-Open VS Code on this branch (or GitHub.com PR view) and ask:
+---
 
-- In Copilot Chat: *"Review the changes in this PR. Focus on edge cases, error handling, and anything that could break existing behavior. Be specific about line numbers."*
-- Or request a formal Copilot review via the Reviewers sidebar on the PR
+#### Run a real code review
 
-> 📸 **Screenshot cue:** Capture a Copilot Chat response calling out a specific issue in the PR, or a Copilot PR review inline comment.
-
-**Step 4 — Request changes or merge**
-
-If the PR looks good:
-```bash
-gh pr merge <number> --squash --delete-branch
+```
+/review
 ```
 
-If you want changes first, leave a comment on the PR (not the issue):
-```bash
-gh pr comment <number> --body "The error handling in calculate() doesn't account for sequential operator presses — please add a guard for that case and re-run the tests."
+The CLI runs its **code review agent** against the current PR diff — looking for bugs, edge cases, missing error handling, and logic issues. It's the same quality bar as requesting a Copilot review on GitHub.com, but you're doing it from the terminal.
+
+Read the output carefully. It will flag specific lines. If something looks wrong, ask the CLI to explain or fix it:
+
+```
+The review flagged a potential issue in line 47 — explain the risk and suggest a fix.
 ```
 
-> 📸 **Screenshot cue:** Capture the green merge confirmation in terminal, or the PR comment you left requesting changes.
+> 📸 **Screenshot cue:** Capture `/review` output highlighting a specific issue in the agent's code.
+
+---
+
+#### Merge or request changes
+
+If you're happy with the PR:
+
+```
+/pr merge --squash --delete-branch
+```
+
+If you want the cloud agent to iterate, leave a comment on the PR on GitHub.com (or use `gh pr comment` from a second terminal) describing the change needed — the agent will pick it up and push a new commit.
+
+> 📸 **Screenshot cue:** Capture the merge confirmation in the CLI, or the PR comment requesting changes.
+
+---
 
 **Instructor talking points:**
-- The async agent workflow changes how you think about delegation — treat Copilot like a junior dev who works while you sleep
-- `gh pr checkout` + Copilot Chat is a faster review loop than switching to the browser and back
-- Copilot reviewing Copilot's own PR (via `gh pr comment` asking for a fix) is a real workflow — the agent will iterate on the PR based on your feedback
-- The CLI commands in Module 3.2 are the same ones that power GitHub Actions workflows — learning them here makes reading `.yml` files much less intimidating
+- `/delegate` is the bridge between local agentic work and the cloud agent — you plan locally, delegate the execution, review the result. This is the full async loop.
+- The CLI's `@file` and `#issue` references give it GitHub context that raw terminal tools don't have — it's not just a shell wrapper
+- `/review` in the CLI and requesting Copilot review on GitHub.com use the same underlying model — pick whichever fits your flow
+- The `!` prefix makes the CLI a true pair programmer: it sees command output and reacts to it, not just to what you type
+- Participants can use `/share` to export this session as a markdown or HTML file — great for notes or sharing with the team
 
----
+
 
 ## Pre-Workshop Setup Checklist (Instructor)
 
@@ -574,7 +605,7 @@ gh pr comment <number> --body "The error handling in calculate() doesn't account
 - [ ] Copilot Business licenses assigned to all participants
 - [ ] Copilot cloud agent enabled at org level (Settings → Copilot → Coding agent)
 - [ ] GitHub Pages not blocked by org policy
-- [ ] Participants in Track 3 have `gh` CLI installed (or Codespaces available as fallback)
+- [ ] Participants in Track 3 have GitHub Copilot CLI installed (`brew install copilot-cli` or `curl -fsSL https://gh.io/copilot-install | bash`)
 - [ ] Workshop guide URL shared in chat at start
 
 ---
@@ -617,13 +648,14 @@ gh pr comment <number> --body "The error handling in calculate() doesn't account
 
 | # | When to take it | What to capture |
 |---|----------------|-----------------|
-| 23 | Module 3.1, Step 5 | Issue with Copilot assigned + agent session starting |
-| 24 | Module 3.2, Block 1 | `gh copilot explain` output for a complex/risky command |
-| 25 | Module 3.2, Block 2 | `gh copilot suggest` response + the resulting command output |
-| 26 | Module 3.2, Block 3 | `gh pr list` or `gh run list` showing real repo output |
-| 27 | Module 3.2, Block 4 | Terminal after `gh issue create --assignee @copilot` + browser showing agent started |
-| 28 | Module 3.3, Step 2 | `gh pr diff` output in terminal |
-| 29 | Module 3.3, Step 3 | Copilot Chat or PR review calling out a specific issue |
-| 30 | Module 3.3, Step 4 | Merge confirmation in terminal OR PR comment requesting changes |
+| 23 | Module 3.1 Setup | Copilot CLI splash screen on first launch |
+| 24 | Module 3.1 `/delegate` | CLI confirmation message + link to cloud agent session after `/delegate` |
+| 25 | Module 3.2, Block 1 | `/plan` output showing proposed implementation steps |
+| 26 | Module 3.2, Block 2 | CLI answering a codebase question with a non-obvious insight |
+| 27 | Module 3.2, Block 3 | `/diff` output showing the CLI's changes in a readable format |
+| 28 | Module 3.2, Block 4 | `! npm test` followed by CLI diagnosing and fixing the failure |
+| 29 | Module 3.3, Check in | `/pr` output showing the cloud agent's open PR |
+| 30 | Module 3.3, Review | `/review` output highlighting a specific issue in the agent's code |
+| 31 | Module 3.3, Merge | Merge confirmation in CLI or PR comment requesting changes |
 
 
