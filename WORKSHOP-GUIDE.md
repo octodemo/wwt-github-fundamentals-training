@@ -27,7 +27,8 @@ Participants need a realistic, repeatable "day in the life" experience that show
 | Track | Audience | Duration |
 |-------|----------|----------|
 | Track 1 — GitHub Newcomer | People new to GitHub | ~60 min |
-| Track 2 — Copilot Power User | People familiar with Copilot, new to CLI | ~45–60 min |
+| Track 2 — Collaboration Guardrails | Anyone who manages or contributes to shared repos | ~30–45 min |
+| Track 3 — Copilot Power User | People familiar with Copilot, new to CLI | ~45–60 min |
 
 Participants self-select their track during the intro. Both tracks can run simultaneously.
 
@@ -196,7 +197,152 @@ Participants self-select their track during the intro. Both tracks can run simul
 
 ---
 
-## Track 2: Copilot Power User — CLI & Advanced Workflows
+## Track 2: Collaboration Guardrails — CODEOWNERS & Repository Rules
+
+**Best taken after:** Track 1 (or on its own for anyone managing shared repos).
+**Who it's for:** Developers, tech leads, and platform engineers who want to enforce consistent contribution standards — whether protecting `main` from direct pushes, requiring reviewers for specific files, or locking down secrets.
+
+### Learning Objectives
+- Understand what CODEOWNERS is and why it matters
+- Create a CODEOWNERS file that maps file paths to required reviewers
+- Configure repository rulesets to enforce PR requirements and branch protections
+- Enable secret scanning and push protection
+- See how these guardrails interact with the Copilot cloud agent workflow
+
+---
+
+### Module 2.1 — Creating a CODEOWNERS File
+
+**Goal:** Automatically require the right reviewers based on what files are changed in a PR.
+
+**What is CODEOWNERS?**
+A `CODEOWNERS` file tells GitHub who is responsible for specific files or directories. When a PR touches those files, the designated owners are automatically added as required reviewers. No more "oops, forgot to tag someone."
+
+**Steps (participant):**
+1. In your calculator repo, navigate to **Add file → Create new file**
+2. Name it `.github/CODEOWNERS`
+3. Add rules using this syntax — owner can be a username, team, or email:
+
+```
+# All files: default reviewer
+*  @your-github-username
+
+# JavaScript files require a JS lead review
+*.js  @your-github-username
+
+# Deployment config requires ops team
+.github/workflows/  @octodemo/workshop-instructors
+```
+
+> 📸 **Screenshot cue:** Capture the CODEOWNERS file in the GitHub editor before committing.
+
+4. Commit directly to `main`
+5. Now create a new branch, modify any `.js` file, and open a PR
+6. Observe: your username appears automatically in the **Reviewers** sidebar as a required reviewer
+
+> 📸 **Screenshot cue:** Capture the PR Reviewers sidebar showing auto-assigned code owners (indicated by the shield icon).
+
+**Instructor talking points:**
+- CODEOWNERS works best on repos with `main` branch protection — without it, PRs can still be merged without the required review
+- Teams (e.g., `@org/team-name`) are more scalable than individual usernames — if someone leaves, the team still owns the file
+- The cloud agent respects CODEOWNERS — it will request review from code owners when it raises a PR
+- CODEOWNERS syntax supports globs: `docs/**` owns everything under `/docs`
+
+---
+
+### Module 2.2 — Setting Up Repository Rulesets
+
+**Goal:** Enforce branch protection and contribution policies without relying on people to remember.
+
+**What are Rulesets?**
+Repository Rulesets (the modern successor to branch protection rules) let you define exactly what must happen before code can be merged into any branch. They're more flexible than classic branch protections and can be layered.
+
+**Steps (participant):**
+1. Go to **Settings → Rules → Rulesets**
+2. Click **New ruleset → New branch ruleset**
+3. Name it: `Protect main`
+4. Set **Enforcement status** to **Active**
+5. Under **Target branches**, click **Add target → Include default branch**
+6. Enable the following rules:
+
+| Rule | Setting | Why |
+|------|---------|-----|
+| **Restrict deletions** | ✅ On | Prevent accidental deletion of `main` |
+| **Require a pull request before merging** | ✅ On, Required approvals: 1 | No direct pushes to `main` |
+| **Require review from Code Owners** | ✅ On | Enforces CODEOWNERS from Module 2.1 |
+| **Block force pushes** | ✅ On | Preserves commit history |
+| **Require status checks to pass** | Optional — enable if repo has CI | Ensures tests pass before merge |
+
+> 📸 **Screenshot cue:** Capture the Ruleset configuration screen with your rules enabled before saving.
+
+7. Click **Create** to save the ruleset
+8. Try to push directly to `main` — observe the push is blocked
+
+> 📸 **Screenshot cue:** Capture the error message when attempting a direct push to `main` ("Changes must be made through a pull request").
+
+**Instructor talking points:**
+- Rulesets can be applied at the **organization level** — set once, enforce everywhere across all repos
+- Unlike classic branch protection rules, Rulesets support **bypass lists** — you can grant org admins an exception without disabling protections for everyone
+- The Copilot cloud agent always works on feature branches, so Rulesets don't block its workflow — in fact, they reinforce it
+- For Enterprise: Rulesets can be pushed down from the org/enterprise level, so individual repo owners can't override them
+
+---
+
+### Module 2.3 — Enable Secret Scanning & Push Protection
+
+**Goal:** Prevent secrets and credentials from ever reaching the repo.
+
+**What is it?**
+GitHub's secret scanning automatically detects 200+ credential patterns (AWS keys, GitHub tokens, Stripe keys, etc.) across your entire repo history. Push protection goes further — it blocks a push at the moment a secret is detected, before it ever lands on GitHub.
+
+**Steps (participant):**
+1. Go to **Settings → Security & analysis**
+2. Under **Secret scanning**, click **Enable**
+3. Under **Push protection**, click **Enable**
+
+> 📸 **Screenshot cue:** Capture the Security & analysis page with both Secret scanning and Push protection showing as enabled (green).
+
+4. **Try it:** Create a new branch, add a fake AWS key pattern to any file:
+   ```
+   # test-secret.txt
+   AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+   ```
+5. Attempt to commit and push — observe GitHub blocks the push and explains why
+6. Delete the file, push clean
+
+> 📸 **Screenshot cue:** Capture the push protection block message in your terminal or browser.
+
+**Instructor talking points:**
+- Secret scanning scans your *entire commit history*, not just new code — it will alert on secrets committed in the past
+- Push protection works even if someone tries to sneak a secret into an AI-generated PR — Copilot's output gets scanned too
+- Organizations can add **custom patterns** for internal credential formats (e.g., internal API keys that GitHub doesn't know about)
+- For Enterprise: alerts go to security teams, not just repo owners — great for compliance
+
+---
+
+### Module 2.4 — See It All Work Together (Bonus)
+
+**Goal:** Observe how guardrails shape the full contribution workflow, including Copilot's.
+
+**Steps (participant):**
+1. With your ruleset and CODEOWNERS active, go back to your calculator repo
+2. Create a new Issue and assign it to Copilot (cloud agent)
+3. Watch Copilot open a PR — notice it:
+   - Works on a feature branch (respects ruleset)
+   - Requests review from the code owners you defined
+   - Cannot merge on its own (ruleset requires human approval)
+4. Review and merge the PR — observe the full guardrailed flow end to end
+
+> 📸 **Screenshot cue:** Capture the PR showing CODEOWNERS review request + Ruleset status check in the merge box simultaneously.
+
+**Instructor talking points:**
+- This is the key message: **guardrails don't slow down AI — they make AI output trustworthy**
+- Every PR, whether from a human or Copilot, goes through the same gates
+- This is how platform teams give developers (and AI) freedom to move fast without breaking things
+
+---
+
+## Track 3: Copilot Power User — CLI & Advanced Workflows
 
 **Prerequisite:** Participants should already be comfortable with GitHub basics and Copilot chat. This track focuses on the CLI and advanced prompting patterns.
 
@@ -208,7 +354,7 @@ Participants self-select their track during the intro. Both tracks can run simul
 
 ---
 
-### Module 2.1 — Getting Started with Copilot CLI
+### Module 3.1 — Getting Started with Copilot CLI
 
 **Goal:** Install and run first commands.
 
@@ -249,7 +395,7 @@ gh copilot suggest --target shell "compress a directory into a .tar.gz file"
 
 ---
 
-### Module 2.2 — Advanced Prompting Patterns
+### Module 3.2 — Advanced Prompting Patterns
 
 **Goal:** Learn prompting strategies that get better results from Copilot.
 
@@ -280,7 +426,7 @@ gh copilot suggest --target shell "compress a directory into a .tar.gz file"
 
 ---
 
-### Module 2.3 — Custom Instructions
+### Module 3.3 — Custom Instructions
 
 **Goal:** Configure Copilot to always follow your team's conventions.
 
@@ -354,18 +500,25 @@ Key message: Copilot lives at every step of this flow
 - Line-level comments + summary
 > 📸 **Slide asset:** Use a participant screenshot of an actual Copilot review comment from the lab.
 
-### Slide 9 — Track 2: Copilot CLI
+### Slide 9 — Track 2: Collaboration Guardrails
+- CODEOWNERS: right reviewer, automatically, every time
+- Rulesets: enforce PR requirements, block direct pushes, require status checks
+- Secret scanning + push protection: stops credentials before they land
+- Key message: guardrails don't slow down AI — they make AI output trustworthy
+> 📸 **Slide asset:** Capture the PR merge box showing CODEOWNERS review request + Ruleset status checks side by side.
+
+### Slide 10 — Track 3: Copilot CLI
 - `gh copilot explain` → understand any command
 - `gh copilot suggest` → generate commands from English
 - Show live demo of 2–3 examples
 > 📸 **Slide asset:** Use a participant terminal screenshot showing `gh copilot suggest` output, or capture the instructor demo live.
 
-### Slide 10 — Track 2: Advanced Prompting
+### Slide 11 — Track 3: Advanced Prompting
 - Constraints, role-setting, output format, iteration
 - `.github/copilot-instructions.md` for team conventions
 - `@workspace` context in VS Code
 
-### Slide 11 — Debrief Prompts
+### Slide 12 — Debrief Prompts
 - What surprised you?
 - Where did you get stuck?
 - One thing you'd use Monday morning?
@@ -422,15 +575,27 @@ A consolidated list of all screenshot cues for instructors preparing slide asset
 | 14 | Module 1.5, Step 2 | "Branch deleted" confirmation |
 | 15 | Module 1.5, Step 3 | Live site with dark mode toggle — light AND dark mode (2 shots!) |
 
-### Track 2 — Copilot Power User
+### Track 2 — Collaboration Guardrails
 
 | # | When to take it | What to capture |
 |---|----------------|-----------------|
-| 16 | Module 2.1 | Terminal output of `gh copilot explain` or `gh copilot suggest` |
-| 17 | Module 2.2, Step 3 | VS Code Copilot Chat panel showing `@workspace` audit response |
-| 18 | Module 2.2, Step 5 | VS Code Source Control panel with staged changes |
-| 19 | Module 2.3, Step 3 | VS Code showing a Copilot suggestion following a custom instruction |
-| 20 | Module 2.3, Step 4 | Cloud agent PR showing code that follows custom instruction rules |
+| 16 | Module 2.1, Step 3 | CODEOWNERS file in GitHub editor before committing |
+| 17 | Module 2.1, Step 6 | PR Reviewers sidebar showing auto-assigned code owners (shield icon) |
+| 18 | Module 2.2, Step 6 | Ruleset config screen with rules enabled before saving |
+| 19 | Module 2.2, Step 8 | Push blocked error: "Changes must be made through a pull request" |
+| 20 | Module 2.3, Step 3 | Security & analysis page — Secret scanning + Push protection enabled |
+| 21 | Module 2.3, Step 5 | Push protection block message in terminal or browser |
+| 22 | Module 2.4, Step 3 | PR merge box showing CODEOWNERS review request + Ruleset status check |
+
+### Track 3 — Copilot Power User
+
+| # | When to take it | What to capture |
+|---|----------------|-----------------|
+| 23 | Module 3.1 | Terminal output of `gh copilot explain` or `gh copilot suggest` |
+| 24 | Module 3.2, Step 3 | VS Code Copilot Chat panel showing `@workspace` audit response |
+| 25 | Module 3.2, Step 5 | VS Code Source Control panel with staged changes |
+| 26 | Module 3.3, Step 3 | VS Code showing a Copilot suggestion following a custom instruction |
+| 27 | Module 3.3, Step 4 | Cloud agent PR showing code that follows custom instruction rules |
 
 ### Instructor Slide Assets
 
@@ -438,6 +603,7 @@ A consolidated list of all screenshot cues for instructors preparing slide asset
 |-------|-------------------------------|
 | Slide 6 — Track 1 Flow | Screenshots #1, #5, #12 (new repo prompt, live app, Copilot review) |
 | Slide 8 — PR Review | Screenshot #12 (Copilot inline review comment) |
-| Slide 9 — Copilot CLI | Screenshot #16 (terminal `gh copilot suggest` output) |
+| Slide 9 — Guardrails | Screenshot #22 (PR merge box with CODEOWNERS + Ruleset) |
+| Slide 10 — Copilot CLI | Screenshot #23 (terminal `gh copilot suggest` output) |
 | Debrief Slide | Screenshot #6 (calculator showing result) and #15 (dark mode live) |
 
